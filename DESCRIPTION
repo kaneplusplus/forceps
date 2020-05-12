@@ -1,15 +1,14 @@
 Package: forceps
-Title: What the Package Does (One Line, Title Case)
+Title: A grammar for manipulating clinical trial data
 Version: 0.0.0.9000
-Authors@R: 
-    person(given = "First",
-           family = "Last",
+Authors@R: c(
+  person(given = "Michael J.",
+           family = "Kane",
+           email = "michael.kane@yale.edu",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "http://orcid.org/0000-0003-1899-6662")))
 Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+License: Apache License (>= 2.0)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
