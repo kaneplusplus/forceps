@@ -1,3 +1,7 @@
 ^LICENSE\.md$
 ^data-raw$
 ^inst/r-medicine-2020$
+^README\.Rmd$
+^CODE_OF_CONDUCT\.md$
+^\.travis\.yml$
+^codecov\.yml$
