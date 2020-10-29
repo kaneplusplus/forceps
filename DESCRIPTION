@@ -1,6 +1,6 @@
 Package: forceps
 Title: A grammar for manipulating clinical trial data
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: c(
   person(given = "Michael J.",
            family = "Kane",

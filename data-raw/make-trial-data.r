@@ -111,7 +111,7 @@ demo <- read_sas(here::here("data-raw/adam-test-raw/demo.sas7bdat"))
 lc_adsl <- demo %>%
   rename(usubjid = PtID, best_response = BestResp, pfs_days = pfsdays,
          os_days = osdays) %>%
-  select(usubjid, best_response, pfs_days, os_days)
+  select(usubjid, best_response, pfs_days, pfs_censor, os_days, os_censor)
 
 lc_adsl$chemo_stop <- sample(lc_demography$chemo_stop, nrow(lc_adsl))
 
