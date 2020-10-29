@@ -1,0 +1,327 @@
+---
+title: "Processing Clinical Trial Analysis Data with the {forceps} Package"
+author: "Michael Kane<br><span style = 'font-size: 80%;'>School of Public Health, Biostatistics Department<br>Yale University<br>"
+date: '<br>R/Medicine 2020<br><br>`r icon::fa("github")` [kaneplusplus](https://github.com/kaneplusplus)<br> `r icon::fa("twitter")` [kaneplusplus](https://twitter.com/kaneplusplus)'
+output:
+  xaringan::moon_reader:
+    css: [duke-blue, metropolis, tamu-fonts]
+    titleSlideClass: [left, middle]
+---
+
+```{r echo = FALSE}
+xaringanExtra::use_panelset()
+```
+
+# <br>Background: Sumbmitting study results to the FDA
+
+<br>
+## Clinical trial study data being submitted to the Food and Drug Administration 
+## must conform to the standards developed by the Clinical Data Interchange 
+## Standards Consortium (CDISC).
+
+--
+
+<br>
+## The goal is to "enable information system interoperability to 
+## improve medical research and related areas of healthcare."
+
+--
+
+<br>
+## Submissions include Analytical Data Model (ADaM) formatted data
+- Individual-level (patient) data
+- Data values are validated by at least two analysts 
+- Used directly in statistical analyses to show a therapies efficacy
+
+---
+
+# <br> Why might we care about ADaM formatted data?
+
+<br>
+## We might be providing an analysis for a trial
+
+--
+
+<br>
+## This is the format for popular open-access data sources
+- [Project DataSphere](https://www.projectdatasphere.org/)
+- [Immport](https://www.immport.org/home)
+
+--
+  
+## These data facilitate a lot of biomedical research
+- Prognostic characterization of patients (based on control data)
+- Subtype identification and analysis
+
+---
+
+# <br> So, what's the challenge? Why are you giving this talk?
+
+<br>
+## The data format is SAS-centric
+- longitudinal data are separated from demographic data don't mix
+- we may have longitudinal data at different times per individual
+- categorical variables need a string and a integer-valued variable
+
+--
+
+<br>
+## Data sets are not tidy
+- A column may correspond to multiple variables
+- A separate columns are needed to identify the variable and a variable value
+
+---
+
+# <br> The {forceps} package
+
+<br>
+
+## A minimal set of functions and data that make it easy to go from ADaM 
+## formatted data to a single analyzable data set.
+
+<br>
+
+## Verbs
+- `data_desc()`
+- `contradictions()`
+- `consolidate()`
+- `cohort()`
+
+<br>
+
+## Includes toy .sas7bdat files with common ADaM file issues.
+
+---
+
+# <br> What do the data look like?
+
+.panelset[
+
+.panel[.panel-name[R Code]
+
+```{r eval = FALSE}
+library(haven)
+library(purrr)
+fn <- dir("adam-test")
+ds <- map(fn, ~ read_sas(file.path("adam-test", .x)))
+names(ds) <- gsub(".sas7bdat", "", fn)
+names(ds)
+head(ds[[1]])
+head(ds[[2]])
+head(ds[[3]])
+```
+]
+
+.panel[.panel-name[Output 1]
+```{r eval = TRUE, echo = FALSE}
+library(haven)
+library(purrr)
+fn <- dir("adam-test")
+ds <- map(fn, ~ read_sas(file.path("adam-test", .x)))
+names(ds) <- gsub(".sas7bdat", "", fn)
+names(ds)
+```
+]
+
+.panel[.panel-name[Output 2]
+```{r eval = TRUE, echo = FALSE}
+ds[[1]]
+```
+]
+
+.panel[.panel-name[Output 3]
+```{r eval = TRUE, echo = FALSE}
+ds[[2]]
+```
+]
+
+.panel[.panel-name[Output 4]
+```{r eval = TRUE, echo = FALSE}
+ds[[3]]
+```
+]
+
+]
+
+---
+
+# <br> What do we want the data to look like?
+
+<br>
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+x <- normalizer::pnc_ds(ds, collapse_on = "PtID", handle_contra_vals = TRUE, verbose = FALSE)
+x[,1:10]
+```
+
+---
+
+# <br>Create data descriptions 
+
+```{r eval = FALSE, echo = TRUE}
+data_desc(ds[[1]])
+```
+
+```{r eval = TRUE, echo = FALSE}
+library(tibble)
+tibble(var = names(ds[[1]]), 
+       desc = c("Patient", "Adverse Event Duration", "Adverse Event", "Adverse Event Type", "Adverse Event Grade",
+                "Adverse Event Treatment", "Adverse Event Day", "Worse Common Toxicity Criteria",
+                "Sex", "Race", "Overall Survival Days", "Overal Survival Censor"))
+```
+
+```{r eval = TRUE, echo = FALSE}
+contras <- normalizer::contradiction_tibbles(ds, collapse_on = "PtID")
+```
+
+---
+# <br>Find conflicts
+
+.panelset[
+
+.panel[.panel-name[R Code]
+```{r eval = FALSE, echo = TRUE}
+contras <- contradictions(ds, on = "PtID")
+contras
+```
+]
+
+.panel[.panel-name[contras[1]]
+```{r eval = TRUE, echo = FALSE}
+contras[1]
+```
+]
+
+.panel[.panel-name[contras[2]]
+```{r eval = TRUE, echo = FALSE}
+contras[2]
+```
+]
+
+.panel[.panel-name[contras[3]]
+```{r eval = TRUE, echo = FALSE}
+contras[3]
+```
+]
+
+]
+
+---
+
+# <br>Second, pivot_wider() on mutiple-variable columns
+
+```{r messages = FALSE, warnings = FALSE, echo = TRUE, eval = TRUE}
+ds$ae
+```
+
+---
+
+# <br>Second, pivot_wider() on mutiple-variable columns
+
+<br>
+```{r messages = FALSE, warnings = FALSE, echo = TRUE, eval = TRUE}
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(tidyr, quietly = TRUE, warn.conflicts = FALSE)
+library(foreach, quietly = TRUE, warn.conflicts = FALSE)
+options(dplyr.summarise.inform = FALSE)
+
+ae_rep <- ds$ae %>% 
+  group_by(PtID) %>%
+  summarize(PtID = PtID[1],
+            Sex = Sex[1],
+            Race = Race[1],
+            osdays = osdays[1],
+            os_censor = os_censor[1])
+```
+
+---
+
+# <br>Second, pivot_wider() on mutiple-variable columns
+
+<br>
+
+```{r messages = FALSE, warnings = FALSE, echo = TRUE, eval = TRUE}
+ae_wider <- foreach(it = split(seq_len(nrow(ds$ae)), ds$ae$PtID), 
+                    .combine = bind_rows) %do% {
+  tryCatch(ds$ae[it,] %>% 
+             select(PtID, AE, Grade) %>%
+             distinct(PtID, AE, .keep_all = TRUE) %>%
+             pivot_wider(names_from = AE, values_from = Grade),
+           error = function(e) tibble(PtID = ds$ae[it,]$PtID))
+}
+
+for (j in seq_along(ae_wider)) {
+  ae_wider[[j]][is.na(ae_wider[[j]])] <- 0
+}
+
+ds$ae <- full_join(ae_rep, ae_wider, by = "PtID")
+```
+
+---
+
+# <br> Try to consolidate() the data sets
+
+```{r, eval = FALSE, fig.width = 6, fig.height=4}
+x <- consolidate(ds, on = "PtID")
+dim(x)
+x[1:5, 1:10]
+```
+
+```{r, echo = FALSE, warning = FALSE, message=FALSE}
+x <- normalizer::consolidate(ds, collapse_on = "PtID", verbose = FALSE)
+dim(x)
+x[1:5, 1:10]
+```
+
+---
+
+# <br> The cohort() Verb
+
+<br>
+## Cohort:
+- A demographic grouping of people
+- To associate with such a group
+
+<br>
+
+## There is a `cohort()` function that nests on variable value groups
+- Values that are repeated for the group are retained in the cohorted variable
+- Other variables are put into a list column
+
+<br>
+
+## Useful for doing things like nesting on site id for example
+- Write a function to pull features from the nested values and compare across sites
+- Could be use to answer: do certain sites see better/worse response?
+---
+
+# <br> Can I use it now?
+
+<br>
+
+## Package has been used to harmonize 12 different analyses
+
+--
+
+<br>
+
+--
+
+## The package will be up in the next few weeks
+
+<br>
+
+--
+
+## The interface should be considered stable
+
+<br>
+
+--
+
+## It will be available at [https://github.com/kaneplusplus/forceps](https://github.com/kaneplusplus/forceps)
+
+<br>
+
+--
+
+## Thanks!

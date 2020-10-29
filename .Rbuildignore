@@ -1,1 +1,3 @@
 ^LICENSE\.md$
+^data-raw$
+^inst/r-medicine-2020$

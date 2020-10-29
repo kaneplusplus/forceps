@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Processing Clinical Trial Analysis Data with the {forceps} Package</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Michael Kane School of Public Health, Biostatistics Department Yale University " />
+    <script src="foreceps_files/header-attrs-2.3/header-attrs.js"></script>
+    <link href="foreceps_files/remark-css-0.0.1/duke-blue.css" rel="stylesheet" />
+    <link href="foreceps_files/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+    <link href="foreceps_files/remark-css-0.0.1/tamu-fonts.css" rel="stylesheet" />
+    <link href="foreceps_files/font-awesome-5.3.1/css/fontawesome-all.min.css" rel="stylesheet" />
+    <link href="foreceps_files/panelset-0.2.1/panelset.css" rel="stylesheet" />
+    <script src="foreceps_files/panelset-0.2.1/panelset.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Processing Clinical Trial Analysis Data with the {forceps} Package
+### Michael Kane<br><span style = 'font-size: 80%;'>School of Public Health, Biostatistics Department<br>Yale University<br>
+### <br>R/Medicine 2020<br><br><i class="fab  fa-github "></i> <a href="https://github.com/kaneplusplus">kaneplusplus</a><br> <i class="fab  fa-twitter "></i> <a href="https://twitter.com/kaneplusplus">kaneplusplus</a>
+
+---
+
+
+
+
+# &lt;br&gt;Background: Sumbmitting study results to the FDA
+
+&lt;br&gt;
+## Clinical trial study data being submitted to the Food and Drug Administration 
+## must conform to the standards developed by the Clinical Data Interchange 
+## Standards Consortium (CDISC).
+
+--
+
+&lt;br&gt;
+## The goal is to "enable information system interoperability to 
+## improve medical research and related areas of healthcare."
+
+--
+
+&lt;br&gt;
+## Submissions include Analytical Data Model (ADaM) formatted data
+- Individual-level (patient) data
+- Data values are validated by at least two analysts 
+- Used directly in statistical analyses to show a therapies efficacy
+
+---
+
+# &lt;br&gt; Why might we care about ADaM formatted data?
+
+&lt;br&gt;
+## We might be providing an analysis for a trial
+
+--
+
+&lt;br&gt;
+## This is the format for popular open-access data sources
+- [Project DataSphere](https://www.projectdatasphere.org/)
+- [Immport](https://www.immport.org/home)
+
+--
+  
+## These data facilitate a lot of biomedical research
+- Prognostic characterization of patients (based on control data)
+- Subtype identification and analysis
+
+---
+
+# &lt;br&gt; So, what's the challenge? Why are you giving this talk?
+
+&lt;br&gt;
+## The data format is SAS-centric
+- longitudinal data are separated from demographic data don't mix
+- we may have longitudinal data at different times per individual
+- categorical variables need a string and a integer-valued variable
+
+--
+
+&lt;br&gt;
+## Data sets are not tidy
+- A column may correspond to multiple variables
+- A separate columns are needed to identify the variable and a variable value
+
+---
+
+# &lt;br&gt; The {foreceps} package
+
+&lt;br&gt;
+
+## A minimal set of functions and data that make it easy to go from ADaM 
+## formatted data to a single analyzable data set.
+
+&lt;br&gt;
+
+## Verbs
+- `data_desc()`
+- `contradictions()`
+- `consolidate()`
+- `cohort()`
+
+&lt;br&gt;
+
+## Includes toy .sas7bdat files with common ADaM file issues.
+
+---
+
+# &lt;br&gt; What do the data look like?
+
+.panelset[
+
+.panel[.panel-name[R Code]
+
+
+```r
+library(haven)
+library(purrr)
+fn &lt;- dir("adam-test")
+ds &lt;- map(fn, ~ read_sas(file.path("adam-test", .x)))
+names(ds) &lt;- gsub(".sas7bdat", "", fn)
+names(ds)
+head(ds[[1]])
+head(ds[[2]])
+head(ds[[3]])
+```
+]
+
+.panel[.panel-name[Output 1]
+
+```
+## [1] "ae"        "biomarker" "demo"
+```
+]
+
+.panel[.panel-name[Output 2]
+
+```
+## # A tibble: 4,879 x 12
+##     PtID AEDuration AE    AEType Grade AETreat AEDay WorseCTC Sex   Race  osdays
+##    &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt;
+##  1  1003 4          BURN… NERVO… 1     0          27 1        2     1         NA
+##  2  1003 4          CONS… GASTR… 2     1           4 2        2     1         NA
+##  3  1003 .          DEPR… PSYCH… 2     0          66 2        2     1         NA
+##  4  1003 .          BACK… MUSCU… 2     1          27 2        2     1         NA
+##  5  1003 3          DYSU… RENAL… 2     1           1 2        2     1         NA
+##  6  1003 26         SKIN… SKIN … 1     0           5 1        2     1         NA
+##  7  1003 7          HEAD… NERVO… 1     0           3 1        2     1         NA
+##  8  1003 1          HAEM… RESPI… 1     1           1 1        2     1         NA
+##  9  1003 83         RHIN… INFEC… 1     1          14 1        2     1         NA
+## 10  1003 2          MYAL… MUSCU… 2     1           3 2        2     1         NA
+## # … with 4,869 more rows, and 1 more variable: os_censor &lt;dbl&gt;
+```
+]
+
+.panel[.panel-name[Output 3]
+
+```
+## # A tibble: 558 x 13
+##    TP53   PtID Sex   Race  Smoking  ECOG PriorResp pfsdays osdays    DX   Age
+##    &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1 "2"    1003 2     1     1           1 2             101    233     3    51
+##  2 "2"    1005 1     1     1           1 4              78    184     2    44
+##  3 "2"    1006 2     1     1           1 2             253    333     2    22
+##  4 ""     1009 2     1     3           1 2             130    643     3    44
+##  5 ""     1014 2     1     1           1 4              41    116     1    76
+##  6 "3"    1018 1     1     1           1 2             194    423     3    35
+##  7 ""     1023 1     1     1           1 2              49    337     1    73
+##  8 ""     1025 2     1     0           1 4              95    589     2    71
+##  9 ""     1030 1     1     3           1 4             351    688     2    20
+## 10 ""     1033 1     1     3           1 5              33    125     1    55
+## # … with 548 more rows, and 2 more variables: osind &lt;dbl&gt;, pfsind &lt;dbl&gt;
+```
+]
+
+.panel[.panel-name[Output 4]
+
+```
+## # A tibble: 558 x 18
+##    Sex   Race  Smoking  ECOG Refractory PriorResp PriorTrmt BestResp pfsdays
+##    &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;   &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt;        &lt;dbl&gt;   &lt;dbl&gt;
+##  1 2     1     1           1          0 2         3                1     101
+##  2 1     1     1           1          1 4         2                0      78
+##  3 2     1     1           1          1 2         99               1     253
+##  4 2     1     3           1          0 2         2                0     130
+##  5 2     1     1           1          1 4         99               0      41
+##  6 1     1     1           1          1 2         2                0     194
+##  7 1     1     1           1          1 2         99               0      49
+##  8 2     1     0           1          0 4         1                0      95
+##  9 1     1     3           1          1 4         1                0     351
+## 10 1     1     3           1          1 5         1                0      33
+## # … with 548 more rows, and 9 more variables: pfs_censor &lt;dbl&gt;, osdays &lt;dbl&gt;,
+## #   os_censor &lt;dbl&gt;, Platinum &lt;dbl&gt;, Paclitax &lt;dbl&gt;, DX &lt;dbl&gt;, Age &lt;dbl&gt;,
+## #   Subject &lt;chr&gt;, PtID &lt;dbl&gt;
+```
+]
+
+]
+
+---
+
+# &lt;br&gt; What do we want the data to look like?
+
+&lt;br&gt;
+
+```
+## # A tibble: 558 x 10
+##     PtID ae     TP53  osdays osind pfsind Refractory PriorTrmt BestResp Platinum
+##    &lt;dbl&gt; &lt;list&gt; &lt;fct&gt;  &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt; &lt;fct&gt;        &lt;dbl&gt;    &lt;dbl&gt;
+##  1  1003 &lt;tibb… "2"      233     0      0          0 3                1        0
+##  2  1005 &lt;tibb… "2"      184     0      1          1 2                0        1
+##  3  1006 &lt;tibb… "2"      333     0      0          1 99               1        1
+##  4  1009 &lt;tibb… ""       643     1      1          0 2                0        0
+##  5  1014 &lt;tibb… ""       116     0      0          1 99               0        1
+##  6  1018 &lt;tibb… "3"      423     0      0          1 2                0        1
+##  7  1023 &lt;tibb… ""       337     0      0          1 99               0        1
+##  8  1025 &lt;tibb… ""       589     0      0          0 1                0        0
+##  9  1030 &lt;tibb… ""       688     0      0          1 1                0        1
+## 10  1033 &lt;tibb… ""       125     0      0          1 1                0        1
+## # … with 548 more rows
+```
+
+---
+
+# &lt;br&gt;Create data descriptions 
+
+
+```r
+data_desc(ds[[1]])
+```
+
+
+```
+## # A tibble: 12 x 2
+##    var        desc                          
+##    &lt;chr&gt;      &lt;chr&gt;                         
+##  1 PtID       Patient                       
+##  2 AEDuration Adverse Event Duration        
+##  3 AE         Adverse Event                 
+##  4 AEType     Adverse Event Type            
+##  5 Grade      Adverse Event Grade           
+##  6 AETreat    Adverse Event Treatment       
+##  7 AEDay      Adverse Event Day             
+##  8 WorseCTC   Worse Common Toxicity Criteria
+##  9 Sex        Sex                           
+## 10 Race       Race                          
+## 11 osdays     Overall Survival Days         
+## 12 os_censor  Overal Survival Censor
+```
+
+
+
+---
+# &lt;br&gt;Find conflicts
+
+.panelset[
+
+.panel[.panel-name[R Code]
+
+```r
+contras &lt;- contradictions(ds, on = "PtID")
+contras
+```
+]
+
+.panel[.panel-name[contras[1]]
+
+```
+## $osdays
+## # A tibble: 558 x 4
+##     PtID    ae biomarker  demo
+##    &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;
+##  1  1003    NA       233   233
+##  2  1005   184       184   184
+##  3  1006   333       333   333
+##  4  1009   643       643   643
+##  5  1014   116       116   116
+##  6  1018   423       423   423
+##  7  1023   337       337   337
+##  8  1025   589       589   589
+##  9  1030   688       688   688
+## 10  1033   125       125   125
+## # … with 548 more rows
+```
+]
+
+.panel[.panel-name[contras[2]]
+
+```
+## $os_censor
+## # A tibble: 558 x 3
+##     PtID    ae  demo
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1  1003    NA     1
+##  2  1005     1     1
+##  3  1006     1     1
+##  4  1009     0     0
+##  5  1014     1     1
+##  6  1018     1     1
+##  7  1023     1     1
+##  8  1025     1     1
+##  9  1030     1     1
+## 10  1033     1     1
+## # … with 548 more rows
+```
+]
+
+.panel[.panel-name[contras[3]]
+
+```
+## $Age
+## # A tibble: 558 x 3
+##     PtID biomarker  demo
+##    &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;
+##  1  1003        51    51
+##  2  1005        44    44
+##  3  1006        22    22
+##  4  1009        44    44
+##  5  1014        76    76
+##  6  1018        35    35
+##  7  1023        73    73
+##  8  1025        71    71
+##  9  1030        20    20
+## 10  1033        55    55
+## # … with 548 more rows
+```
+]
+
+]
+
+---
+
+# &lt;br&gt;Second, pivot_wider() on mutiple-variable columns
+
+
+```r
+ds$ae
+```
+
+```
+## # A tibble: 4,879 x 12
+##     PtID AEDuration AE    AEType Grade AETreat AEDay WorseCTC Sex   Race  osdays
+##    &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt;
+##  1  1003 4          BURN… NERVO… 1     0          27 1        2     1         NA
+##  2  1003 4          CONS… GASTR… 2     1           4 2        2     1         NA
+##  3  1003 .          DEPR… PSYCH… 2     0          66 2        2     1         NA
+##  4  1003 .          BACK… MUSCU… 2     1          27 2        2     1         NA
+##  5  1003 3          DYSU… RENAL… 2     1           1 2        2     1         NA
+##  6  1003 26         SKIN… SKIN … 1     0           5 1        2     1         NA
+##  7  1003 7          HEAD… NERVO… 1     0           3 1        2     1         NA
+##  8  1003 1          HAEM… RESPI… 1     1           1 1        2     1         NA
+##  9  1003 83         RHIN… INFEC… 1     1          14 1        2     1         NA
+## 10  1003 2          MYAL… MUSCU… 2     1           3 2        2     1         NA
+## # … with 4,869 more rows, and 1 more variable: os_censor &lt;dbl&gt;
+```
+
+---
+
+# &lt;br&gt;Second, pivot_wider() on mutiple-variable columns
+
+&lt;br&gt;
+
+```r
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(tidyr, quietly = TRUE, warn.conflicts = FALSE)
+library(foreach, quietly = TRUE, warn.conflicts = FALSE)
+options(dplyr.summarise.inform = FALSE)
+
+ae_rep &lt;- ds$ae %&gt;% 
+  group_by(PtID) %&gt;%
+  summarize(PtID = PtID[1],
+            Sex = Sex[1],
+            Race = Race[1],
+            osdays = osdays[1],
+            os_censor = os_censor[1])
+```
+
+---
+
+# &lt;br&gt;Second, pivot_wider() on mutiple-variable columns
+
+&lt;br&gt;
+
+
+```r
+ae_wider &lt;- foreach(it = split(seq_len(nrow(ds$ae)), ds$ae$PtID), 
+                    .combine = bind_rows) %do% {
+  tryCatch(ds$ae[it,] %&gt;% 
+             select(PtID, AE, Grade) %&gt;%
+             distinct(PtID, AE, .keep_all = TRUE) %&gt;%
+             pivot_wider(names_from = AE, values_from = Grade),
+           error = function(e) tibble(PtID = ds$ae[it,]$PtID))
+}
+
+for (j in seq_along(ae_wider)) {
+  ae_wider[[j]][is.na(ae_wider[[j]])] &lt;- 0
+}
+
+ds$ae &lt;- full_join(ae_rep, ae_wider, by = "PtID")
+```
+
+---
+
+# &lt;br&gt; Try to consolidate() the data sets
+
+
+```r
+x &lt;- consolidate(ds, on = "PtID")
+dim(x)
+x[1:5, 1:10]
+```
+
+
+```
+## [1] 558 463
+```
+
+```
+## # A tibble: 5 x 10
+##    PtID `BURNING SENSAT… CONSTIPATION DEPRESSION `BACK PAIN` DYSURIA
+##   &lt;dbl&gt; &lt;chr&gt;            &lt;chr&gt;        &lt;chr&gt;      &lt;chr&gt;       &lt;chr&gt;  
+## 1  1003 1                2            2          2           2      
+## 2  1005 0                0            0          0           0      
+## 3  1006 0                0            0          0           0      
+## 4  1009 0                0            0          0           0      
+## 5  1014 0                0            0          0           0      
+## # … with 4 more variables: `SKIN EXFOLIATION` &lt;chr&gt;, HEADACHE &lt;chr&gt;,
+## #   HAEMOPTYSIS &lt;chr&gt;, RHINITIS &lt;chr&gt;
+```
+
+---
+
+# &lt;br&gt; The cohort() Verb
+
+&lt;br&gt;
+## Cohort:
+- A demographic grouping of people
+- To associate with such a group
+
+&lt;br&gt;
+
+## There is a `cohort()` function that nests on variable value groups
+- Values that are repeated for the group are retained in the cohorted variable
+- Other variables are put into a list column
+
+&lt;br&gt;
+
+## Useful for doing things like nesting on site id for example
+- Write a function to pull features from the nested values and compare across sites
+- Could be use to answer: do certain sites see better/worse response?
+---
+
+# &lt;br&gt; Can I use it now?
+
+&lt;br&gt;
+
+## Package has been used to harmonize 12 different analyses
+
+--
+
+&lt;br&gt;
+
+--
+
+## The package will be up in the next few weeks
+
+&lt;br&gt;
+
+--
+
+## The interface should be considered stable
+
+&lt;br&gt;
+
+--
+
+## It will be available at [https://github.com/kaneplusplus/foreceps](https://github.com/kaneplusplus/foreceps)
+
+&lt;br&gt;
+
+--
+
+## Thanks!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create();
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
