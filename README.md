@@ -5,8 +5,8 @@
 
 <!-- badges: start -->
 
-[![Build
-Status](https://travis-ci.org/kaneplusplus/forceps.svg?branch=master)](https://travis-ci.org/kaneplusplus/forceps)
+[![Travis build
+status](https://travis-ci.org/kaneplusplus/forceps.svg?branch=master)](https://travis-ci.org/kaneplusplus/forceps)
 [![codecov](https://codecov.io/gh/kaneplusplus/forceps/branch/master/graph/badge.svg)](https://codecov.io/gh/kaneplusplus/forceps)
 <!-- badges: end -->
 
