@@ -10,7 +10,7 @@ Status](https://travis-ci.org/kaneplusplus/forceps.svg?branch=master)](https://t
 [![codecov](https://codecov.io/gh/kaneplusplus/forceps/branch/master/graph/badge.svg)](https://codecov.io/gh/kaneplusplus/forceps)
 <!-- badges: end -->
 
-The goal of forceps is to provide a concise and consistent set of
+The goal of `forceps` is to provide a concise and consistent set of
 methods and data structures for working with clinical trial data.
 
 ## Installation
