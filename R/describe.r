@@ -59,6 +59,10 @@ describe_data <- function(x, data_name = NULL) {
 consolidated_describe_data <- function(...) {
   arg_list <- list(...)
   aln <- names(arg_list)
+  if (is.list(arg_list) && length(arg_list) == 1 && is.null(aln)) {
+    arg_list <- arg_list[[1]]
+    aln <- names(arg_list)
+  }
   ret <- tibble(data_name = character(), var_name = character(), 
                 type = character(), levels = character(),
                 class = character(), label = character(),
