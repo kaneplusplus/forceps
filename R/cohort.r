@@ -1,7 +1,7 @@
 #' Cohort a dataset.
 #'
 #' @param x a data.frame.
-#' @param on which variable should be collapsed on?
+#' @param on which variable should be collapsed?
 #' @param name the variable name of the resulting embedded data.frames.
 #' @param remove_equiv_columns should equivalent columns be removed?
 #' @param keep_cols column names that should be kept.
@@ -25,7 +25,7 @@ cohort <- function(x, on, name = "data",
 
   to_factor <- function(x) {
     col_types <- sapply(x, class)
-    colnames(x)[colnames(x) != on & col_types == "character"]
+    colnames(x)[ !(colnames(x) %in% on) & col_types == "character"]
   }
   if (verbose) {
     cat(green("Mutating character columns to factors.\n"))
@@ -69,19 +69,11 @@ collapsible_vars <- function(x, group_var) {
 # @param x a data.frame.
 # @param key which variable should be collpased on?
 # @param collapse_name the variable name of the collapsed sub-data.frames.
-
 #' @importFrom tidyr nest
 collapse_rows <- function(x, key, collapse_name = "data") {
-  svs <- NULL
   sv <- c(key, collapsible_vars(x, key))
   nsv <- setdiff(colnames(x), sv)
-  if (length(nsv) > 0 && length(unique(x[[key]])) < nrow(x)) {
-    eval(parse(text =
-      gsub("collapse_name", collapse_name,
-           "nest(x, collapse_name = colnames(x)[match(nsv, colnames(x))])")))
-  } else {
-    x
-  }
+  nest(x, !!collapse_name := nsv)
 }
 
 

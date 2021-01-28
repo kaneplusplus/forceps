@@ -16,7 +16,7 @@ cohort(
 \arguments{
 \item{x}{a data.frame.}
 
-\item{on}{which variable should be collapsed on?}
+\item{on}{which variable should be collapsed?}
 
 \item{name}{the variable name of the resulting embedded data.frames.}
 
