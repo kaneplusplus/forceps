@@ -1,7 +1,7 @@
-library(survminer)
-library(survival)
-library(breastCancerNKI)
-library(dplyr)
+#library(survminer)
+#library(survival)
+#library(breastCancerNKI)
+#library(dplyr)
 
 data(nki)
 

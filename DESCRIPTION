@@ -23,13 +23,16 @@ Imports:
     purrr,
     tibble,
     tidyr,
-    survival,
-    survminer,
-    ggplot2
+    ggplot2,
+    checkmate,
+    codetools,
+    rlang
 biocViews:
     breastCancerNKI
 Suggests: 
-    testthat,
-    readr
+    readr,
+    survival,
+    survminer,
+    testthat
 Remotes:
   presagia-analytics/equivalent

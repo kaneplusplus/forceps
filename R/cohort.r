@@ -71,7 +71,8 @@ collapsible_vars <- function(x, group_var) {
 # @param key which variable should be collpased on?
 # @param collapse_name the variable name of the collapsed sub-data.frames.
 #' @importFrom tidyr nest
-#' @importFrom dplyr sym
+#' @importFrom dplyr sym group_by 
+#' @importFrom rlang :=
 collapse_rows <- function(x, key, collapse_name = "data") {
   g <- attributes(group_by(x, !!sym(key)))$groups
   if (nrow(g) == nrow(x)) {
