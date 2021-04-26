@@ -1,6 +1,6 @@
 Package: forceps
 Title: A grammar for manipulating clinical trial data
-Version: 0.0.3
+Version: 0.0.5
 Authors@R: c(
   person(given = "Michael J.",
            family = "Kane",
@@ -15,15 +15,21 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Depends: 
-    R (>= 2.10)
+    R (>= 3.6)
 Imports:
     crayon,
     dplyr,
     equivalent,
     purrr,
     tibble,
-    tidyr
+    tidyr,
+    survival,
+    survminer,
+    ggplot2
+biocViews:
+    breastCancerNKI
 Suggests: 
-    testthat
+    testthat,
+    readr
 Remotes:
   presagia-analytics/equivalent

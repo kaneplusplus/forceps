@@ -1,7 +1,6 @@
 ---
 title: "Processing Clinical Trial Analysis Data with the {forceps} Package"
 author: "Michael Kane<br><span style = 'font-size: 80%;'>School of Public Health, Biostatistics Department<br>Yale University<br>"
-date: '<br>R/Medicine 2020<br><br>`r icon::fa("github")` [kaneplusplus](https://github.com/kaneplusplus)<br> `r icon::fa("twitter")` [kaneplusplus](https://twitter.com/kaneplusplus)'
 output:
   xaringan::moon_reader:
     css: [duke-blue, metropolis, tamu-fonts]

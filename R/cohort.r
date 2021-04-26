@@ -39,6 +39,7 @@ cohort <- function(x, on, name = "data",
       cat("\n")
     }
   }
+  x <- mutate_at(x, to_factor(x), as.factor)
   x %>%
     mutate_at(to_factor(.), as.factor) %>%
     tcat("Collapsing rows.\n", verbose = verbose, style = green) %>%
@@ -54,11 +55,11 @@ collapsible_vars <- function(x, group_var) {
   } else {
     check_vars <- setdiff(colnames(x), group_var)
     check_vals <- Reduce(`&`,
-      Map(function(s) {
-            unlist(lapply(x[s, check_vars],
+      Map(function(v) {
+            vapply(x[v, check_vars],
               function(x) {
                 isTRUE(all(x == x[1])) | all(is.na(x))
-              }))
+              }, NA) 
           }, spl))
     check_vars[check_vals]
   }
@@ -70,10 +71,16 @@ collapsible_vars <- function(x, group_var) {
 # @param key which variable should be collpased on?
 # @param collapse_name the variable name of the collapsed sub-data.frames.
 #' @importFrom tidyr nest
+#' @importFrom dplyr sym
 collapse_rows <- function(x, key, collapse_name = "data") {
-  sv <- c(key, collapsible_vars(x, key))
-  nsv <- setdiff(colnames(x), sv)
-  nest(x, !!collapse_name := nsv)
+  g <- attributes(group_by(x, !!sym(key)))$groups
+  if (nrow(g) == nrow(x)) {
+    x
+  } else {
+    sv <- c(key, collapsible_vars(x, key))
+    nsv <- setdiff(colnames(x), sv)
+    nest(x, !!collapse_name := nsv)
+  }
 }
 
 
