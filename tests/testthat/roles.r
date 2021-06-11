@@ -1,7 +1,7 @@
-#library(survminer)
-#library(survival)
-#library(breastCancerNKI)
-#library(dplyr)
+library(survminer)
+library(survival)
+library(breastCancerNKI)
+library(dplyr)
 
 data(nki)
 
@@ -41,6 +41,11 @@ roles <- list(
   treatment = "treatment",
   demography = baseline_demo,
   baseline_tumor = baseline_tumor,
-  responses = responses)
+  responses = responses,
+  bunk = "a")
 
 nkia <- add_roles(nki, roles)
+nkia <- add_roles(nki, roles[-5])
+nkia <- add_roles(nki, list())
+
+roles(nkia)
